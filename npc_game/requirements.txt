@@ -1,0 +1,3 @@
+honcho-ai>=0.0.15
+anthropic>=0.40.0
+python-dotenv>=1.0.0
