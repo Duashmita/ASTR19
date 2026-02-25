@@ -229,6 +229,12 @@ def run_character_creation() -> dict:
         print("  Starting over…")
         return run_character_creation()
 
+    # -- Pixel art opt-in -----------------------------------------------------
+    gen = input(
+        _c("  Generate pixel portrait with AI art team? [Y/n] ", YELLOW)
+    ).strip().lower()
+    sheet["_gen_sprite"] = not (gen and gen != "y")
+
     return sheet
 
 

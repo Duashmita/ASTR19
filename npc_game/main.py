@@ -4,8 +4,9 @@ main.py – NPC Game entry point
 Flow:
   1. Load env vars (.env or shell)
   2. Character creation  → NPC personality defined by user
-  3. Honcho memory       → personality saved as NPC peer
-  4. Quest               → player + NPC play through the adventure autonomously
+  3. Pixel art           → 4-agent AI team generates a pixel portrait
+  4. Honcho memory       → personality + sprite brief saved as NPC peer
+  5. Quest               → player + NPC play through the adventure autonomously
 
 Usage:
   cd npc_game
@@ -16,6 +17,7 @@ Usage:
 
 Environment variables:
   ANTHROPIC_API_KEY  (required) – Claude powers the NPC's autonomous brain
+                                  AND the pixel artist AI team
   HONCHO_API_KEY     (optional) – enables persistent memory across sessions
 """
 
@@ -55,7 +57,16 @@ def main() -> None:
 
     npc_id = sheet["name"].lower().replace(" ", "_")
 
-    # ── Step 2: Honcho memory ────────────────────────────────────────────────
+    # ── Step 2 (optional): Pixel art AI team ────────────────────────────────
+    sprite_result = None
+    if sheet.pop("_gen_sprite", False):
+        from .pixel_artist.team import generate_character_sprite
+        sprite_result = generate_character_sprite(sheet)
+        # Attach brief to sheet so Honcho gets visual context too
+        if sprite_result and sprite_result.get("brief"):
+            sheet["_visual_brief"] = str(sprite_result["brief"])
+
+    # ── Step 3: Honcho memory ────────────────────────────────────────────────
     memory = HonchoMemory(
         npc_id=npc_id,
         player_id="player",
@@ -63,12 +74,17 @@ def main() -> None:
     )
     print("\n  Saving character to Honcho memory…")
     memory.save_character_sheet(sheet)
+    if sprite_result:
+        memory.log_narrator(
+            f"Character portrait generated – "
+            f"art brief: {sheet.get('_visual_brief','')}"
+        )
     print("  Done.\n")
 
-    # ── Step 3: Build NPC agent ──────────────────────────────────────────────
+    # ── Step 4: Build NPC agent ──────────────────────────────────────────────
     npc = NPCAgent(memory=memory, sheet=sheet)
 
-    # ── Step 4: Run the quest ────────────────────────────────────────────────
+    # ── Step 5: Run the quest ────────────────────────────────────────────────
     quest = Quest(npc=npc, memory=memory)
     quest.run()
 
